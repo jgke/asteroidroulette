@@ -171,7 +171,7 @@ impl State {
             StateDelta::Jumping => self.jumping = true,
             StateDelta::Stuck => self.stuck = true,
             StateDelta::Unstuck => self.stuck = false,
-            StateDelta::ToZero => {},
+            StateDelta::ToZero => self.position = 0,
             StateDelta::Death(cause) => {
                 self.dead = true;
                 self.cause_of_death = Some(cause);

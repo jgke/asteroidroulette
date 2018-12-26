@@ -76,6 +76,12 @@ fn no_double_jumping() {
     [4, 4, 3, 2].iter().for_each(|x| { state.update(*x); });
     assert_eq!(state.position, 3);
 }
+#[test]
+fn move_to_zero() {
+    let mut state = State::new();
+    [1, 2, 3, 3].iter().for_each(|x| { state.update(*x); });
+    assert_eq!(state.position, 0);
+}
 
 #[test]
 fn victory_probabilities() {
