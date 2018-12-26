@@ -83,7 +83,7 @@ fn victory_probabilities() {
     let mut rng = rand::thread_rng();
     let mut ends = (0, 0, 0, 0);
 
-    for _ in 0..10000 {
+    for _ in 0..100000 {
         let mut state = State::new();
         while state.victory().is_none() {
             state.update(dice.sample(&mut rng));
@@ -98,8 +98,8 @@ fn victory_probabilities() {
     }
 
     let sum = (ends.0 as f32) + (ends.1 as f32) + (ends.2 as f32) + (ends.3 as f32);
-    println!("Victories: {}", (ends.0 as f32) / sum);
-    println!("Death by shield: {}", (ends.1 as f32) / sum);
-    println!("Death by Ceres: {}", (ends.2 as f32) / sum);
-    println!("Death by both at once: {}", (ends.3 as f32) / sum);
+    println!("Victories: {:.2}%", 100f32 * (ends.0 as f32) / sum);
+    println!("Death by shield: {:.2}%", 100f32 * (ends.1 as f32) / sum);
+    println!("Death by Ceres: {:.2}%", 100f32 * (ends.2 as f32) / sum);
+    println!("Death by both at once: {:.2}%", 100f32 * (ends.3 as f32) / sum);
 }
