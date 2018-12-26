@@ -22,7 +22,7 @@ fn main() {
         } else {
             println!("...!");
         }
-        thread::sleep(time::Duration::from_millis(800));
+        thread::sleep(time::Duration::from_millis(600));
         match change {
             (PositionDelta::Forward(x), _) => println!("You moved forward to {}.", x),
             (PositionDelta::Jump(x), _) => println!("You jumped to {}!", x),
@@ -34,7 +34,7 @@ fn main() {
             (_, StateDelta::Jumping) => println!("You will jump on the next turn!"),
             (_, StateDelta::Stuck) => println!("You are stuck in space!"),
             (_, StateDelta::Unstuck) => println!("You are no longer stuck in space!"),
-            (_, StateDelta::Death) => println!("You died."),
+            (_, StateDelta::Death(_)) => println!("You died."),
             (PositionDelta::Nothing, StateDelta::Nothing) => print!(", "),
         }
         if let (PositionDelta::Nothing, StateDelta::Nothing) = change {
