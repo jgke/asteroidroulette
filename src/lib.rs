@@ -9,15 +9,16 @@ pub enum CauseOfDeath {
 pub enum PositionDelta {
     Nothing,
     Forward(u8),
+    ToZero,
     Jump(u8),
     Stuck(u8),
-    ToZero,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum StateDelta {
     Nothing,
     Shield,
+    ToZero,
     Jumping,
     Stuck,
     Unstuck,
@@ -25,10 +26,9 @@ pub enum StateDelta {
 }
 
 #[derive(Debug)]
-enum Delta {
-    Pos(PositionDelta),
-    State(StateDelta),
-    ClearHistory
+struct Delta {
+    pos: PositionDelta,
+    effect: StateDelta
 }
 
 #[derive(Debug)]
@@ -55,47 +55,47 @@ impl State {
         }
     }
 
-    fn get_changes(&self, dice: u8) -> Vec<Delta> {
-        let mut changes = vec![];
+    fn get_changes(&self, dice: u8) -> Delta {
+        let mut pos = PositionDelta::Nothing;
+        let mut effect = StateDelta::Nothing;
 
         if self.jumping {
-            changes.push(Delta::Pos(PositionDelta::Jump(dice)));
+            pos = PositionDelta::Jump(dice);
         } else if self.position + 1 == dice {
             if self.stuck {
-                changes.push(Delta::Pos(PositionDelta::Stuck(dice)));
+                pos = PositionDelta::Stuck(dice);
             } else {
-                changes.push(Delta::Pos(PositionDelta::Forward(dice)));
+                pos = PositionDelta::Forward(dice);
             }
         }
 
         if dice == 5 && self.stuck {
-            changes.push(Delta::State(StateDelta::Unstuck));
+            // This won't be overridden
+            effect = StateDelta::Unstuck;
         }
 
         if self.history == dice {
             if !self.shield {
                 if dice == 6 {
-                    changes.push(Delta::State(StateDelta::Death(CauseOfDeath::Both)));
+                    effect = StateDelta::Death(CauseOfDeath::Both);
                 } else {
-                    changes.push(Delta::State(StateDelta::Death(CauseOfDeath::Shields)));
+                    effect = StateDelta::Death(CauseOfDeath::Shields);
                 }
-                return changes;
+                return Delta {pos, effect};
             }
 
             match dice {
-                1 => changes.push(Delta::State(StateDelta::Shield)),
+                1 => effect = StateDelta::Shield,
                 2 => {}
-                3 => changes.push(Delta::Pos(PositionDelta::ToZero)),
-                4 => changes.push(Delta::State(StateDelta::Jumping)),
-                5 => changes.push(Delta::State(StateDelta::Stuck)),
-                6 => changes.push(Delta::State(StateDelta::Death(CauseOfDeath::Ceres))),
+                3 => effect = StateDelta::ToZero,
+                4 => effect = StateDelta::Jumping,
+                5 => effect = StateDelta::Stuck,
+                6 => effect = StateDelta::Death(CauseOfDeath::Ceres),
                 _ => panic!("Invalid input"),
             };
-
-            changes.push(Delta::ClearHistory);
         }
 
-        changes
+        Delta {pos, effect}
     }
 
     pub fn update(&mut self, dice: u8) -> (PositionDelta, StateDelta) {
@@ -104,39 +104,32 @@ impl State {
         self.history = dice;
         self.jumping = false;
 
-        for delta in &changes {
-            match delta {
-                Delta::Pos(PositionDelta::Nothing) => {},
-                Delta::Pos(PositionDelta::Forward(x)) => self.position = *x,
-                Delta::Pos(PositionDelta::Jump(x)) => self.position = *x,
-                Delta::Pos(PositionDelta::Stuck(_)) => {}
-                Delta::Pos(PositionDelta::ToZero) => self.position = 0,
-
-                Delta::State(StateDelta::Nothing) => {},
-                Delta::State(StateDelta::Shield) => self.shield = false,
-                Delta::State(StateDelta::Jumping) => self.jumping = true,
-                Delta::State(StateDelta::Stuck) => self.stuck = true,
-                Delta::State(StateDelta::Unstuck) => self.stuck = false,
-                Delta::State(StateDelta::Death(cause)) => {
-                    self.dead = true;
-                    self.cause_of_death = Some(*cause);
-                },
-
-                Delta::ClearHistory => self.history = 0
-            }
+        match changes.pos {
+            PositionDelta::Nothing => {},
+            PositionDelta::Forward(x) => self.position = x,
+            PositionDelta::Jump(x) => self.position = x,
+            PositionDelta::Stuck(_) => {}
+            PositionDelta::ToZero => self.position = 0,
         }
 
-        let mut pos_delta = None;
-        let mut state_delta = None;
-        for x in changes {
-            match x {
-                Delta::Pos(x) => pos_delta = Some(x),
-                Delta::State(x) => state_delta = Some(x),
-                _ => {}
-            }
+        match changes.effect {
+            StateDelta::Nothing => {},
+            StateDelta::Shield => self.shield = false,
+            StateDelta::Jumping => self.jumping = true,
+            StateDelta::Stuck => self.stuck = true,
+            StateDelta::Unstuck => self.stuck = false,
+            StateDelta::ToZero => {},
+            StateDelta::Death(cause) => {
+                self.dead = true;
+                self.cause_of_death = Some(cause);
+            },
         }
 
-        (pos_delta.unwrap_or(PositionDelta::Nothing), state_delta.unwrap_or(StateDelta::Nothing))
+        if changes.effect != StateDelta::Nothing {
+            self.history = 0;
+        }
+
+        (changes.pos, changes.effect)
     }
 
     pub fn victory(&self) -> Option<bool> {

@@ -28,12 +28,13 @@ fn main() {
             (PositionDelta::Jump(x), _) => println!("You jumped to {}!", x),
             (_, StateDelta::Shield) => println!("You lost your shields!"),
             (PositionDelta::Stuck(x), _) => {
-                println!("You would have moved to {}, but you are stuck.", x)
+                println!("You would have moved to {}, but your engines won't turn on.", x)
             }
             (PositionDelta::ToZero, _) => println!("An asteroid moved you to position 0!"),
+            (_, StateDelta::ToZero) => println!("An asteroid moved you to position 0!"),
             (_, StateDelta::Jumping) => println!("You will jump on the next turn!"),
-            (_, StateDelta::Stuck) => println!("You are stuck in space!"),
-            (_, StateDelta::Unstuck) => println!("You are no longer stuck in space!"),
+            (_, StateDelta::Stuck) => println!("Your engine turned off!"),
+            (_, StateDelta::Unstuck) => println!("Your engine turned back on!"),
             (_, StateDelta::Death(_)) => println!("You died."),
             (PositionDelta::Nothing, StateDelta::Nothing) => print!(", "),
         }
